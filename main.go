@@ -232,7 +232,7 @@ func load(filename string) string {
 	if err != nil {
 		return err.Error()
 	} else {
-		return string(content)
+		return insertChar(string(content),"e")
 	}
 }
 
@@ -241,6 +241,10 @@ func displayLine(s tcell.Screen, x, y int, style tcell.Style, str string) {
 	for i, r := range str {
 		s.SetContent(x+i, y, r, nil, style)
 	}
+}
+
+func insertChar(str string, char string) string{
+	return str[:currX]+char+str[currX:]
 }
 
 //Loads and displays file
