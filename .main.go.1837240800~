@@ -1,26 +1,21 @@
 
 /*
-TODO:
-
+Roadmap:
+- Move left
+- Move right
+- Move up
+- Move down
 - Read character
 - Display function (Wrapper for tcell)
+- Load files using buffio
+- Add space after each line
+- Close
+- Write
 - Multiple buffers
 - Lua API
 - be able to open files in dir
 - swap between windows
 - move to root dir
-*/
-
-/*
-DONE:
-- Move left
-- Move right
-- Move up
-- Move down
-- Load files using buffio
-- Write Files
-- Close
-- Add space after each line
 */
 
 package main
@@ -70,7 +65,12 @@ func main() {
 			switch ev.Key() {
 			case tcell.KeyEscape, tcell.KeyCtrlC:
 				return // Exit the program
+			case tcell.KeyEnter:
+				// // Enter the selected directory or open file
+				// enterSelection(screen, selectedIndex)
+				// selectedIndex = 0
 			case tcell.KeyUp:
+				
 				//Move selection up
 				if currY > 0 {
 					currY--
@@ -97,11 +97,6 @@ func main() {
 				if currX > 0{
 					currX--
 				}
-			case tcell.KeyCtrlS:
-				write("hello.txt",buffer)
-			case tcell.KeyEnter:
-				buffer = append(buffer[:currY+1], buffer[currY:]...)
-				buffer[currY] = " "
 			default:
 				mod, key, ch, name := ev.Modifiers(), ev.Key(), ev.Rune(), ev.Name()
 				_,_,_,_ = mod,key,ch,name
@@ -115,10 +110,10 @@ func main() {
 					if currX > 0{
 						buffer[currY] = removeBackChar(buffer[currY])
 						currX--
-						screen.Clear()
 					}
+					screen.Clear()
 				default:
-					buffer[currY] = insertChar(buffer[currY],string(ch))
+					buffer[currY] = insertChar(buffer[currY],name)
 				}
 			}
 			//drawScreen(screen)
@@ -233,7 +228,7 @@ func highlightSelection(screen tcell.Screen, index int) {
 func highlight(screen tcell.Screen, text string, x, y int) {
   
 	displayLine(screen, 0, y, tcell.StyleDefault, string(text[:x]))
-	displayLine(screen, x, y, tcell.StyleDefault.Background(tcell.ColorBlue).Foreground(tcell.ColorWhite).Blink(true), string(text[x]))
+	displayLine(screen, x, y, tcell.StyleDefault.Background(tcell.ColorBlue).Foreground(tcell.ColorWhite), string(text[x]))
 	displayLine(screen, x+1, y, tcell.StyleDefault, string(text[x+1:]))
 }
 
@@ -315,12 +310,4 @@ func listFiles(path string) ([]os.DirEntry, error) {
 		return nil, err
 	}
 	return files, nil
-}
-
-func write(filename string, text []string){
-	written := ""
-	for  _,x := range text{
-		written += x+"\n"
-	}
-	os.WriteFile(filename, []byte(written), 0644)
 }
