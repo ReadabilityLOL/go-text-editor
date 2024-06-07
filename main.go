@@ -123,14 +123,15 @@ func main() {
 						screen.Clear()
 					}
 				case "Backspace2":
-					for x:= range buffer{
-						buffer[x] = strings.TrimRight(buffer[x]," ") + " "
-					}
+					
 					if currX > 0{
 						buffer[currY] = removeBackChar(buffer[currY])
 						currX--
 						screen.Clear()
 					} else if currY > 0{
+						for x:= range buffer{
+							buffer[x] = strings.TrimRight(buffer[x]," ") + " "
+						}
 						currX = (len(buffer[currY-1])-1) 
 						buffer[currY-1] = buffer[currY-1]+buffer[currY]
 						buffer =  append(buffer[:currY], buffer[currY+1:]...)
