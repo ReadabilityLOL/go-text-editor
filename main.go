@@ -34,6 +34,7 @@ import (
 	"os"
 	"fmt"
 	_ "path/filepath"
+	"strings"
 )
 
 var currentDir string = "."
@@ -41,6 +42,7 @@ var currentDir string = "."
 var editorX, editorY, currX, currY, oldX int = 0, 0, 0, 0, 0 // Start the editor below the file list
 var currFile = make([]string,0)
 func main() {
+
 	screen, err := tcell.NewScreen()
 	if err != nil {
 		log.Fatalf("%+v", err)
@@ -50,6 +52,7 @@ func main() {
 	}
 	defer screen.Fini()
 	//displayLine(screen,0,0,tcell.StyleDefault,"hello, world")
+
 	screen.Show()
 	screen.Clear()
   var xmax, ymax = screen.Size()
@@ -63,6 +66,7 @@ func main() {
 	//highlight(screen,buffer,0,0)
 	//Handle user input
 	for {
+		
 		drawTextEditor(screen, 0, 0, buffer, tcell.StyleDefault)
 		ev := screen.PollEvent()
 		switch ev := ev.(type) {
@@ -100,8 +104,15 @@ func main() {
 			case tcell.KeyCtrlS:
 				write("hello.txt",buffer)
 			case tcell.KeyEnter:
+				newBuff := buffer[currY][:currX]
+				afterBuff := buffer[currY][currX:]
 				buffer = append(buffer[:currY+1], buffer[currY:]...)
-				buffer[currY] = " "
+				buffer[currY] = newBuff
+				buffer[currY+1] = afterBuff
+				currX = 0
+				currY++
+				
+				screen.Clear()
 			default:
 				mod, key, ch, name := ev.Modifiers(), ev.Key(), ev.Rune(), ev.Name()
 				_,_,_,_ = mod,key,ch,name
@@ -112,13 +123,23 @@ func main() {
 						screen.Clear()
 					}
 				case "Backspace2":
+					for x:= range buffer{
+						buffer[x] = strings.TrimRight(buffer[x]," ") + " "
+					}
 					if currX > 0{
 						buffer[currY] = removeBackChar(buffer[currY])
 						currX--
 						screen.Clear()
+					} else if currY > 0{
+						currX = (len(buffer[currY-1])-1) 
+						buffer[currY-1] = buffer[currY-1]+buffer[currY]
+						buffer =  append(buffer[:currY], buffer[currY+1:]...)
+						currY--
+						screen.Clear()
 					}
 				default:
 					buffer[currY] = insertChar(buffer[currY],string(ch))
+					currX++
 				}
 			}
 			//drawScreen(screen)
@@ -284,7 +305,7 @@ func load(filename string) []string{
 // Displays string
 func displayLine(s tcell.Screen, x, y int, style tcell.Style, str string) {
 	for i, r := range str {
-		s.SetContent(x+i, y, r, nil, style)
+		s.SetContent(x+i+1, y, r, nil, style)
 	}
 }
 
@@ -324,3 +345,9 @@ func write(filename string, text []string){
 	}
 	os.WriteFile(filename, []byte(written), 0644)
 }
+
+// func parseInput(event tcell.Event){
+// 	switch ev := event.(type) {
+// 		cas
+// 	}
+// }
