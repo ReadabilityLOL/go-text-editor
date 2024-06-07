@@ -1,4 +1,3 @@
-
 /*
 TODO:
 
@@ -9,6 +8,7 @@ TODO:
 - be able to open files in dir
 - swap between windows
 - move to root dir
+- make a nicer exit function
 */
 
 /*
@@ -28,19 +28,21 @@ package main
 import (
 	//ioutil is deprecated, use io or os.
 	"bufio"
-	_"math"
+	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"log"
+	_ "math"
 	"os"
-	"fmt"
 	_ "path/filepath"
 	"strings"
 )
 
 var currentDir string = "."
+
 // var fileContent string = ""
 var editorX, editorY, currX, currY, oldX int = 0, 0, 0, 0, 0 // Start the editor below the file list
-var currFile = make([]string,0)
+var currFile = make([]string, 0)
+
 func main() {
 
 	screen, err := tcell.NewScreen()
@@ -55,8 +57,8 @@ func main() {
 
 	screen.Show()
 	screen.Clear()
-  var xmax, ymax = screen.Size()
-	_,_ = xmax,ymax
+	var xmax, ymax = screen.Size()
+	_, _ = xmax, ymax
 	//displayfile(screen,"hello.txt")
 	//drawScreen(screen)
 
@@ -66,7 +68,7 @@ func main() {
 	//highlight(screen,buffer,0,0)
 	//Handle user input
 	for {
-		
+
 		drawTextEditor(screen, 0, 0, buffer, tcell.StyleDefault)
 		ev := screen.PollEvent()
 		switch ev := ev.(type) {
@@ -75,34 +77,16 @@ func main() {
 			case tcell.KeyEscape, tcell.KeyCtrlC:
 				return // Exit the program
 			case tcell.KeyUp:
-				//Move selection up
-				if currY > 0 {
-					currY--
-					if currX >= len(buffer[currY])-1{
-						currX = len(buffer[currY])-1
-					} 
-				}
+				currX,currY = up(currX,currY,buffer)			
 			case tcell.KeyDown:
-				
-				//Move selection down
-				if currY < len(buffer)-1 {
-				    currY++
-					if currX >= len(buffer[currY])-1{
-						currX = len(buffer[currY])-1
-					} 
-				}
-
+				currX,currY = down(currX,currY,buffer)
 			case tcell.KeyRight:
-				if currX < len(buffer[currY])-1{
-					currX++
-				} 
-
+				currX,currY = right(currX,currY,buffer)
 			case tcell.KeyLeft:
-				if currX > 0{
-					currX--
-				}
+				currX,currY = left(currX,currY,buffer)
+				
 			case tcell.KeyCtrlS:
-				write("hello.txt",buffer)
+				write("hello.txt", buffer)
 			case tcell.KeyEnter:
 				newBuff := buffer[currY][:currX]
 				afterBuff := buffer[currY][currX:]
@@ -111,35 +95,35 @@ func main() {
 				buffer[currY+1] = afterBuff
 				currX = 0
 				currY++
-				
+
 				screen.Clear()
 			default:
 				mod, key, ch, name := ev.Modifiers(), ev.Key(), ev.Rune(), ev.Name()
-				_,_,_,_ = mod,key,ch,name
-				switch name{
+				_, _, _, _ = mod, key, ch, name
+				switch name {
 				case "Delete":
-					if currX < len(buffer[currY])-1{
+					if currX < len(buffer[currY])-1 {
 						buffer[currY] = removeFrontChar(buffer[currY])
 						screen.Clear()
 					}
 				case "Backspace2":
-					
-					if currX > 0{
+
+					if currX > 0 {
 						buffer[currY] = removeBackChar(buffer[currY])
 						currX--
 						screen.Clear()
-					} else if currY > 0{
-						for x:= range buffer{
-							buffer[x] = strings.TrimRight(buffer[x]," ") + " "
+					} else if currY > 0 {
+						for x := range buffer {
+							buffer[x] = strings.TrimRight(buffer[x], " ") + " "
 						}
-						currX = (len(buffer[currY-1])-1) 
-						buffer[currY-1] = buffer[currY-1]+buffer[currY]
-						buffer =  append(buffer[:currY], buffer[currY+1:]...)
+						currX = (len(buffer[currY-1]) - 1)
+						buffer[currY-1] = buffer[currY-1] + buffer[currY]
+						buffer = append(buffer[:currY], buffer[currY+1:]...)
 						currY--
 						screen.Clear()
 					}
 				default:
-					buffer[currY] = insertChar(buffer[currY],string(ch))
+					buffer[currY] = insertChar(buffer[currY], string(ch))
 					currX++
 				}
 			}
@@ -147,7 +131,7 @@ func main() {
 			//highlightSelection(screen, selectedIndex)
 		case *tcell.EventResize:
 			screen.Sync()
-      xmax, ymax = screen.Size()
+			xmax, ymax = screen.Size()
 		}
 	}
 }
@@ -253,7 +237,7 @@ func highlightSelection(screen tcell.Screen, index int) {
 }
 
 func highlight(screen tcell.Screen, text string, x, y int) {
-  
+
 	displayLine(screen, 0, y, tcell.StyleDefault, string(text[:x]))
 	displayLine(screen, x, y, tcell.StyleDefault.Background(tcell.ColorBlue).Foreground(tcell.ColorWhite).Blink(true), string(text[x]))
 	displayLine(screen, x+1, y, tcell.StyleDefault, string(text[x+1:]))
@@ -275,7 +259,7 @@ func drawTextEditor(s tcell.Screen, x, y int, text []string, style tcell.Style) 
 }
 
 // Loads file and returns text
-func load(filename string) []string{
+func load(filename string) []string {
 	// content, err := os.ReadFile(filename)
 	// if err != nil {
 	// 	return err.Error()
@@ -284,7 +268,7 @@ func load(filename string) []string{
 	// }
 	file, err := os.Open(filename)
 	if err != nil {
-			log.Fatal(err)
+		log.Fatal(err)
 	}
 	defer file.Close()
 
@@ -293,11 +277,11 @@ func load(filename string) []string{
 
 	// Read through 'tokens' until an EOF is encountered.
 	for sc.Scan() {
-			lines = append(lines, sc.Text()+" ")
+		lines = append(lines, sc.Text()+" ")
 	}
 
 	if err := sc.Err(); err != nil {
-			log.Fatal(err)
+		log.Fatal(err)
 	}
 	fmt.Println(lines)
 	return lines
@@ -310,16 +294,16 @@ func displayLine(s tcell.Screen, x, y int, style tcell.Style, str string) {
 	}
 }
 
-func insertChar(str string, char string) string{
-	return str[:currX]+char+str[currX:]
+func insertChar(str string, char string) string {
+	return str[:currX] + char + str[currX:]
 }
 
-func removeFrontChar(str string) string{
-	return str[:currX]+str[currX+1:]
+func removeFrontChar(str string) string {
+	return str[:currX] + str[currX+1:]
 }
 
-func removeBackChar(str string) string{
-	return str[:currX-1]+str[currX:]
+func removeBackChar(str string) string {
+	return str[:currX-1] + str[currX:]
 }
 
 //Loads and displays file
@@ -339,10 +323,10 @@ func listFiles(path string) ([]os.DirEntry, error) {
 	return files, nil
 }
 
-func write(filename string, text []string){
+func write(filename string, text []string) {
 	written := ""
-	for  _,x := range text{
-		written += x+"\n"
+	for _, x := range text {
+		written += x + "\n"
 	}
 	os.WriteFile(filename, []byte(written), 0644)
 }
