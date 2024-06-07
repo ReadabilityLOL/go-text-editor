@@ -34,7 +34,7 @@ import (
 	_ "math"
 	"os"
 	_ "path/filepath"
-	"strings"
+	_"strings"
 )
 
 var currentDir string = "."
@@ -84,44 +84,21 @@ func main() {
 				currX,currY = right(currX,currY,buffer)
 			case tcell.KeyLeft:
 				currX,currY = left(currX,currY,buffer)
-				
 			case tcell.KeyCtrlS:
 				write("hello.txt", buffer)
 			case tcell.KeyEnter:
-				newBuff := buffer[currY][:currX]
-				afterBuff := buffer[currY][currX:]
-				buffer = append(buffer[:currY+1], buffer[currY:]...)
-				buffer[currY] = newBuff
-				buffer[currY+1] = afterBuff
-				currX = 0
-				currY++
-
+				currX,currY,buffer = insertNewLine(currX,currY,buffer)
 				screen.Clear()
 			default:
 				mod, key, ch, name := ev.Modifiers(), ev.Key(), ev.Rune(), ev.Name()
 				_, _, _, _ = mod, key, ch, name
 				switch name {
 				case "Delete":
-					if currX < len(buffer[currY])-1 {
-						buffer[currY] = removeFrontChar(buffer[currY])
-						screen.Clear()
-					}
+					currX,currY,buffer = delete(currX,currY,buffer)
+					screen.Clear()
 				case "Backspace2":
-
-					if currX > 0 {
-						buffer[currY] = removeBackChar(buffer[currY])
-						currX--
-						screen.Clear()
-					} else if currY > 0 {
-						for x := range buffer {
-							buffer[x] = strings.TrimRight(buffer[x], " ") + " "
-						}
-						currX = (len(buffer[currY-1]) - 1)
-						buffer[currY-1] = buffer[currY-1] + buffer[currY]
-						buffer = append(buffer[:currY], buffer[currY+1:]...)
-						currY--
-						screen.Clear()
-					}
+					currX,currY,buffer = backspace(currX,currY,buffer)
+					screen.Clear()
 				default:
 					buffer[currY] = insertChar(buffer[currY], string(ch))
 					currX++
