@@ -2,6 +2,7 @@ package main
 
 import(
   "strings"
+  "github.com/gdamore/tcell/v2"
 )
 
 //The following function is kinda stupid
@@ -80,4 +81,8 @@ func delete(x,y int, buffer []string) (int,int,[]string){
   } 
 
   return x,y,buffer
+}
+
+func decideKeybinds(event tcell.Event){
+  
 }

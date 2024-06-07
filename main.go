@@ -68,48 +68,8 @@ func main() {
 	//highlight(screen,buffer,0,0)
 	//Handle user input
 	for {
-
 		drawTextEditor(screen, 0, 0, buffer, tcell.StyleDefault)
-		ev := screen.PollEvent()
-		switch ev := ev.(type) {
-		case *tcell.EventKey:
-			switch ev.Key() {
-			case tcell.KeyEscape, tcell.KeyCtrlC:
-				return // Exit the program
-			case tcell.KeyUp:
-				currX,currY = up(currX,currY,buffer)			
-			case tcell.KeyDown:
-				currX,currY = down(currX,currY,buffer)
-			case tcell.KeyRight:
-				currX,currY = right(currX,currY,buffer)
-			case tcell.KeyLeft:
-				currX,currY = left(currX,currY,buffer)
-			case tcell.KeyCtrlS:
-				write("hello.txt", buffer)
-			case tcell.KeyEnter:
-				currX,currY,buffer = insertNewLine(currX,currY,buffer)
-				screen.Clear()
-			default:
-				mod, key, ch, name := ev.Modifiers(), ev.Key(), ev.Rune(), ev.Name()
-				_, _, _, _ = mod, key, ch, name
-				switch name {
-				case "Delete":
-					currX,currY,buffer = delete(currX,currY,buffer)
-					screen.Clear()
-				case "Backspace2":
-					currX,currY,buffer = backspace(currX,currY,buffer)
-					screen.Clear()
-				default:
-					buffer[currY] = insertChar(buffer[currY], string(ch))
-					currX++
-				}
-			}
-			//drawScreen(screen)
-			//highlightSelection(screen, selectedIndex)
-		case *tcell.EventResize:
-			screen.Sync()
-			xmax, ymax = screen.Size()
-		}
+		currX,currY,buffer = switchWithKeybinds(screen,currX,currY,buffer)
 	}
 }
 
@@ -283,14 +243,6 @@ func removeBackChar(str string) string {
 	return str[:currX-1] + str[currX:]
 }
 
-//Loads and displays file
-// func displayfile(screen tcell.Screen, filename string){
-//     screen.Clear()
-//     fileText := load(filename)
-//     displayLine(screen,1,1,tcell.StyleDefault,fileText)
-//     screen.Sync()
-// }
-
 // Returns list of files
 func listFiles(path string) ([]os.DirEntry, error) {
 	files, err := os.ReadDir(path)
@@ -307,9 +259,3 @@ func write(filename string, text []string) {
 	}
 	os.WriteFile(filename, []byte(written), 0644)
 }
-
-// func parseInput(event tcell.Event){
-// 	switch ev := event.(type) {
-// 		cas
-// 	}
-// }
