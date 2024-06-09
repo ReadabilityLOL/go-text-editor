@@ -1,9 +1,9 @@
-hello there 
-this is some filler text 
+hello there my friend! 
+tis is some filler text 
 goodbllehefefeef 
- c 
-dfasdf 
-fffff 
-asdasdfhhjhjhuhsshdafdsfsdjafdsjkflja;sdfjkdlsajf;j 
  
-lorem ipsum 
+names_list := ["jingo","gone"] 
+ 
+c 
+c 
+c 

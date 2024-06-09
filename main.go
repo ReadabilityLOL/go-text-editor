@@ -29,12 +29,13 @@ import (
 	//ioutil is deprecated, use io or os.
 	"bufio"
 	"fmt"
-	"github.com/gdamore/tcell/v2"
 	"log"
 	_ "math"
 	"os"
 	_ "path/filepath"
-	_"strings"
+	_ "strings"
+	"github.com/gdamore/tcell/v2"
+	//"github.com/yuin/gopher-lua"
 )
 
 var currentDir string = "."
@@ -44,8 +45,14 @@ var editorX, editorY, currX, currY, oldX int = 0, 0, 0, 0, 0 // Start the editor
 var currFile = make([]string, 0)
 
 func main() {
-
+	// L := lua.NewState()
+	// defer L.Close()
+	// if err := L.DoFile(`init.lua`); err != nil {
+	// 		panic(err)
+	// }
 	screen, err := tcell.NewScreen()
+	cmd,err := tcell.NewScreen()
+	_ = cmd
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
@@ -63,13 +70,13 @@ func main() {
 	//drawScreen(screen)
 
 	// Initial selection index
-	//selectedIndex := 0
-	buffer := load("hello.txt")
-	//highlight(screen,buffer,0,0)
 	//Handle user input
+	buffer := load("hello.txt")
+  mode := "normal"
 	for {
-		drawTextEditor(screen, 0, 0, buffer, tcell.StyleDefault)
-		currX,currY,buffer = switchWithKeybinds(screen,currX,currY,buffer)
+    visibuffer := bufferize(buffer)
+		drawTextEditor(screen, 0, 0, buffer, tcell.StyleDefault,1)
+		currX,currY,buffer,mode = switchWithKeybinds(screen,currX,currY,buffer,visibuffer,mode)
 	}
 }
 
@@ -124,78 +131,42 @@ func splitLines(text string) []string {
 	return lines
 }
 
-// func enterSelection(screen tcell.Screen, index int) {
-//     if index == 0 {
-//         // ".." selected, go up to parent directory
-//         currentDir = filepath.Dir(currentDir)
-//         fileContent = ""
-//     } else {
-//         files, err := listFiles(currentDir)
-//         if err != nil {
-//             log.Fatalf("Failed to list files: %+v", err)
-//         }
-//         if index > 0 && index <= len(files) {
-//             selected := files[index-1]
-//             if selected.IsDir() {
-//                 // Enter directory
-//                 currentDir = filepath.Join(currentDir, selected.Name())
-//                 fileContent = ""
-//                 drawScreen(screen)
-//             } else {
-//                 // Open file
-//                 filePath := filepath.Join(currentDir, selected.Name())
-//                 fileContent = load(filePath)
-//                 //displayfile(screen,filePath)
-//                 // if err != nil {
-//                 //     fileContent = "Failed to read file: " + err.Error()
-//                 // } else {
-//                 //     fileContent = string(content)
-//                 // }
-//             }
-//         }
-//     }
+
+// func highlightSelection(screen tcell.Screen, index int) {
+// 	files, err := listFiles(currentDir)
+// 	if err != nil {
+// 		log.Fatalf("Failed to list files: %+v", err)
+// 	}
+// 	if index >= 0 && index <= len(files) {
+// 		if index == 0 {
+// 			// Highlight ".." entry
+// 			displayLine(screen, 1, 1, tcell.StyleDefault.Background(tcell.ColorBlue).Foreground(tcell.ColorWhite), "..")
+// 		} else {
+// 			selected := files[index-1].Name()
+// 			displayLine(screen, 1, index+1, tcell.StyleDefault.Background(tcell.ColorBlue).Foreground(tcell.ColorWhite), selected)
+// 		}
+// 	}
+// 	screen.Show()
 // }
 
-func highlightSelection(screen tcell.Screen, index int) {
-	files, err := listFiles(currentDir)
-	if err != nil {
-		log.Fatalf("Failed to list files: %+v", err)
-	}
-	if index >= 0 && index <= len(files) {
-		if index == 0 {
-			// Highlight ".." entry
-			displayLine(screen, 1, 1, tcell.StyleDefault.Background(tcell.ColorBlue).Foreground(tcell.ColorWhite), "..")
-		} else {
-			selected := files[index-1].Name()
-			displayLine(screen, 1, index+1, tcell.StyleDefault.Background(tcell.ColorBlue).Foreground(tcell.ColorWhite), selected)
-		}
-	}
-	screen.Show()
-}
+// func highlight(screen tcell.Screen, text string, x, y int) {
 
-func highlight(screen tcell.Screen, text string, x, y int) {
-
-	displayLine(screen, 0, y, tcell.StyleDefault, string(text[:x]))
-	displayLine(screen, x, y, tcell.StyleDefault.Background(tcell.ColorBlue).Foreground(tcell.ColorWhite).Blink(true), string(text[x]))
-	displayLine(screen, x+1, y, tcell.StyleDefault, string(text[x+1:]))
-}
+// 	displayLine(screen, 0, y, tcell.StyleDefault, string(text[:x]))
+// 	displayLine(screen, x, y, tcell.StyleDefault.Background(tcell.ColorBlue).Foreground(tcell.ColorWhite).Blink(true), string(text[x]))
+// 	displayLine(screen, x+1, y, tcell.StyleDefault, string(text[x+1:]))
+// }
 
 // Draws text
-func drawTextEditor(s tcell.Screen, x, y int, text []string, style tcell.Style) {
-	// text := load(filename)
-	//lines := splitLines(text)
+func drawTextEditor(s tcell.Screen, x, y int, text []string, style tcell.Style,offset int) {
 	for i, line := range text {
-		if i == currY {
-			highlight(s, line, currX, y+i)
-		} else {
-			displayLine(s, x, y+i, style, line)
-		}
+    s.ShowCursor(currX+offset,currY)	
+		displayLine(s, x, y+i, style, line,offset)
 
 	}
 	s.Show()
 }
 
-// Loads file and returns text
+// s file and returns text
 func load(filename string) []string {
 	// content, err := os.ReadFile(filename)
 	// if err != nil {
@@ -214,7 +185,7 @@ func load(filename string) []string {
 
 	// Read through 'tokens' until an EOF is encountered.
 	for sc.Scan() {
-		lines = append(lines, sc.Text()+" ")
+		lines = append(lines, sc.Text())
 	}
 
 	if err := sc.Err(); err != nil {
@@ -225,9 +196,9 @@ func load(filename string) []string {
 }
 
 // Displays string
-func displayLine(s tcell.Screen, x, y int, style tcell.Style, str string) {
+func displayLine(s tcell.Screen, x, y int, style tcell.Style, str string,offset int) {
 	for i, r := range str {
-		s.SetContent(x+i+1, y, r, nil, style)
+		s.SetContent(x+i+offset, y, r, nil, style)
 	}
 }
 
@@ -258,4 +229,12 @@ func write(filename string, text []string) {
 		written += x + "\n"
 	}
 	os.WriteFile(filename, []byte(written), 0644)
+}
+
+func bufferize(buffer []string)([]string){
+  newbuff := make([]string,0)
+  for _,x := range buffer{
+    newbuff = append(newbuff,x+" ")
+  }
+  return newbuff
 }
